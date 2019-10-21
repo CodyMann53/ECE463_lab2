@@ -29,7 +29,8 @@ void InitRoutingTbl (struct pkt_INIT_RESPONSE *InitResponse, int myID){
 #endif 
 
 	// Loop through all of router's neighbors to initialize's its routing table
-	for (int i = 0; i < InitResponse->no_nbr; i++){		
+	int i; 
+	for (i = 0; i < InitResponse->no_nbr; i++){		
 		
 		
 		// Make routing table entry for this neighbori
