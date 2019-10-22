@@ -259,10 +259,10 @@ int main (int argc, char *argv[])
     TestForcedUpd();
     printf("Test Case 4: PASS Forced update rule taken care\n");
 
-/*//Testing Split Horizon Rule
+//Testing Split Horizon Rule
 
     TestSplitHorizon();
-    printf("Test Case 5: PASS Split horizon rule taken care\n");*/
+    printf("Test Case 5: PASS Split horizon rule taken care\n");
 
 return 0;
 
