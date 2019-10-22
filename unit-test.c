@@ -254,12 +254,12 @@ int main (int argc, char *argv[])
     TestDVUpdate();
     printf("Test Case 3: PASS Updated new shortest path\n");
 
-/*//Testing Forced Update Rule
+//Testing Forced Update Rule
 
     TestForcedUpd();
     printf("Test Case 4: PASS Forced update rule taken care\n");
 
-//Testing Split Horizon Rule
+/*//Testing Split Horizon Rule
 
     TestSplitHorizon();
     printf("Test Case 5: PASS Split horizon rule taken care\n");*/

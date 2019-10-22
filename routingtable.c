@@ -22,7 +22,7 @@ bool in_table(int dest_id, int * entry_index);
 
 /* Routine Name    : forced_update_rule
  * INPUT ARGUMENTS : 1. struct route_entry * - Pointer to router's entry is having the forced update rule applied to it
-                     2. int - The id of sender that sent the routing table update packet. 
+                     2. struct route_entry * - Pointer to sender's entry in routing table that will be used wtih forced update rule to be applied
                      3. int - The new calculated cost using the sender's cost and the cost to get to sender from router position 
  *
  * RETURN VALUE    : void
@@ -30,7 +30,7 @@ bool in_table(int dest_id, int * entry_index);
  *		     has been received from one of its neighbors. This funciton simply performs the forced update logic on the entry and then updates the cost 
 		     accordingly. 
  */
-void forced_update_rule(struct route_entry * router, int sender, int new_cost);
+void forced_update_rule(struct route_entry * router, struct route_entry * neighbor, int new_cost); 
  
 /* Routine Name    : path_vector_rule
  * INPUT ARGUMENTS : 1. struct route_entry * - Pointer to router's entry that is having path vector rule applied
@@ -136,7 +136,7 @@ int UpdateRoutes(struct pkt_RT_UPDATE *RecvdUpdatePacket, int costToNbr, int myI
 		// else perform the path vector update algorithm because entry was found 
 		else{
 			// Forced update and path vector rules being applied
-			forced_update_rule(&routingTable[entry_index], RecvdUpdatePacket->sender_id, new_cost); 
+			forced_update_rule(&routingTable[entry_index], &RecvdUpdatePacket->route[i], new_cost); 
 			path_vector_rule(&routingTable[entry_index], &RecvdUpdatePacket->route[i], new_cost, myID); 
 		}
 	}	
@@ -218,10 +218,15 @@ bool in_table(int dest_id, int * entry_index){
 }
 
  
-void forced_update_rule(struct route_entry * router, int sender, int new_cost){
+void forced_update_rule(struct route_entry * router, struct route_entry * neighbor, int new_cost){
 	// if neighbor is next hop for router, then it must update its entry
-	if (router->next_hop == sender){
-		router->cost = new_cost; 
+	if (router->next_hop == neighbor->path[0]){
+		router->cost = new_cost;
+		router->path_len = neighbor->path_len + 1;
+		int i;  
+		for (i = 1; i < router->path_len; i++){
+			router->path[i] = neighbor->path[i-1]; 
+		}
 	}
 	return; 
 } 
