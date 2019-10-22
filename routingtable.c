@@ -64,41 +64,28 @@ void InitRoutingTbl (struct pkt_INIT_RESPONSE *InitResponse, int myID){
 	routingTable[NumRoutes].next_hop = myID; 
 	routingTable[NumRoutes].cost = 0;
 #ifdef PATHVECTOR		 
-	routingTable[NumRoutes].path_len = 1;
-	routingTable[NumRoutes++].path[0] = myID;
+	routingTable[NumRoutes].path_len = 2;
+	routingTable[NumRoutes].path[0] = myID;
+	routingTable[NumRoutes++].path[1] = myID;
 #endif 
 
 	// Loop through all of router's neighbors to initialize's its routing table
 	int i; 
 	for (i = 0; i < InitResponse->no_nbr; i++){		
 		
-		printf("i: %d\r\n", i); 
 		// Make routing table entry for this neighbori
 		routingTable[NumRoutes].dest_id = InitResponse->nbrcost[i].nbr; 
 		routingTable[NumRoutes].next_hop = InitResponse->nbrcost[i].nbr; 
 		routingTable[NumRoutes].cost = InitResponse->nbrcost[i].cost;
 #ifdef PATHVECTOR		 
-		routingTable[NumRoutes].path_len = 1;
-		routingTable[NumRoutes++].path[0] = InitResponse->nbrcost[i].nbr;
+		routingTable[NumRoutes].path_len = 2;
+		routingTable[NumRoutes].path[0] = myID;
+		routingTable[NumRoutes++].path[1] = InitResponse->nbrcost[i].nbr;
 #endif 	
 	}		
 	return;
 }
 
-
-/* Routine Name    : UpdateRoutes
- * INPUT ARGUMENTS : 1. (struct pkt_RT_UPDATE *) - The Route Update message from one of the neighbors of the router.
- *                   2. int - The direct cost to the neighbor who sent the update. 
- *                   3. int - My router's id received from command line argument.
- * RETURN VALUE    : int - Return 1 : if the routing table has changed on running the function.
- *                         Return 0 : Otherwise.
- * USAGE           : This routine is called after receiving the route update from any neighbor. 
- *                   The routing table is then updated after running the distance vector protocol. 
- *                   It installs any new route received, that is previously unknown. For known routes, 
- *                   it finds the shortest path using current cost and received cost. 
- *                   It also implements the forced update and split horizon rules. My router's id
- *                   that is passed as argument may be useful in applying split horizon rule.
- */
 ////////////////////////////////////////////////////////////////
 int UpdateRoutes(struct pkt_RT_UPDATE *RecvdUpdatePacket, int costToNbr, int myID){
 	int new_cost = 0; 
@@ -128,7 +115,7 @@ int UpdateRoutes(struct pkt_RT_UPDATE *RecvdUpdatePacket, int costToNbr, int myI
 		else{
 			new_cost = INFINITY; 
 		}
-		
+			
 		
 		// if not in routers table, then add it
 		if (in_table(RecvdUpdatePacket->route[i].dest_id, &entry_index) == false){
@@ -179,9 +166,23 @@ void ConvertTabletoPkt(struct pkt_RT_UPDATE *UpdatePacketToSend, int myID){
 	return;
 }
 
+/* Routine Name    : UninstallRoutesOnNbrDeath
+ * INPUT ARGUMENTS : 1. int - The id of the inactive neighbor 
+ *                   (one who didn't send Route Update for FAILURE_DETECTION seconds).
+ *                   
+ * RETURN VALUE    : void
+ * USAGE           : This function is invoked when a nbr is found to be dead. The function checks all routes that
+ *                   use this nbr as next hop, and changes the cost to INFINITY.
+ */
 ////////////////////////////////////////////////////////////////
 void UninstallRoutesOnNbrDeath(int DeadNbr){
-	/* ----- YOUR CODE HERE ----- */
+	// Go through routing table and check all routes that use neighbor as next hop
+	int i; 
+	for (i = 0; i < NumRoutes; i++){
+		if (routingTable[i].next_hop == DeadNbr){
+			routingTable[i].cost = INFINITY; 
+		}
+	} 
 	return;
 }
 
@@ -228,7 +229,8 @@ void forced_update_rule(struct route_entry * router, int sender, int new_cost){
 void path_vector_rule(struct route_entry * router, struct route_entry * neighbor, int new_cost, int myID){
 	// Don't do anything if router is in neighbor's path to destination
 #ifdef PATHVECTOR
-	int i; 
+	int i;
+
 	for (i = 0; i < neighbor->path_len; i++){
 		if (neighbor->path[i] == myID){
 			return; 
@@ -236,7 +238,7 @@ void path_vector_rule(struct route_entry * router, struct route_entry * neighbor
 	}
 
 	// router is not in neighbors path, so use neighbors path if it is better
-	if (new_cost < neighbor->cost){
+	if (new_cost < router->cost){
 		// Update the next_hop, path length, and cost
 		router->next_hop = neighbor->path[0]; 
 		router->cost = new_cost; 
