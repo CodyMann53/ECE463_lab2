@@ -244,12 +244,12 @@ int main (int argc, char *argv[])
     TestInitRT();
     printf("Test Case 1: PASS Initialized routing table\n");
 
-/*//Testing New Route Update
+//Testing New Route Update
     
     TestNewRoute();
     printf("Test Case 2: PASS Added new route to routing table\n");
    
-//Testing Distance Vector Calculation
+/*//Testing Distance Vector Calculation
 
     TestDVUpdate();
     printf("Test Case 3: PASS Updated new shortest path\n");
