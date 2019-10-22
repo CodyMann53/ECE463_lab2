@@ -149,7 +149,7 @@ int UpdateRoutes(struct pkt_RT_UPDATE *RecvdUpdatePacket, int costToNbr, int myI
 		// else perform the path vector update algorithm because entry was found 
 		else{
 			// Forced update and path vector rules being applied
-			forced_update_rule(&routingTable[entry_index], &RecvdUpdatePacket->sender_id, new_cost); 
+			forced_update_rule(&routingTable[entry_index], RecvdUpdatePacket->sender_id, new_cost); 
 			path_vector_rule(&routingTable[entry_index], &RecvdUpdatePacket->route[i], new_cost, myID); 
 		}
 	}	
@@ -243,7 +243,7 @@ void path_vector_rule(struct route_entry * router, struct route_entry * neighbor
 		router->path_len = neighbor->path_len + 1; 
 
 		// Update routers path
-		for (i = 1; i < router->path; i++){
+		for (i = 1; i < router->path_len; i++){
 			router->path[i] = neighbor->path[i-1]; 
 		}
 	}
