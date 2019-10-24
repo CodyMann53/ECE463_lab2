@@ -8,7 +8,7 @@ R0_UDP_PORT = 3062
 R1_UDP_PORT = 4062
 R2_UDP_PORT = 5062
 R3_UDP_PORT = 6062
-CONFIG_FILE = 4_routers.conf
+CONFIG_FILE =  2_routers.conf
 
 # change based on type of router to be built
 # value can be either DISTVECTOR or PATHVECTOR
@@ -41,6 +41,13 @@ unit-test  : routingtable.o unit-test.c
 submit-checkpoint:
 	zip lab2checkpoint.mann53 routingtable.c router.c
 
+udp_server: udp_server.c router.h
+	$(CC) $(CFLAGS) -D $(ROUTERMODE) -D DEBUG=$(DEBUG) udp_server.c -o udp_server
+
+.PHONY: run_udp_server
+run_udp_server:
+	./udp_server $(NE_UDP_PORT)
+
 .PHONY: test
 test:
 	./unit-test
@@ -65,6 +72,11 @@ run_2: router
 run_3: router
 	./router 3 $(NE_HOSTNAME) $(NE_UDP_PORT) $(R3_UDP_PORT)
 
+.PHONY: debug
+debug:
+	gdb --args router 0 $(NE_HOSTNAME) $(NE_UDP_PORT) $(R0_UDP_PORT)
+
+
 .PHONY: submit-final
 submit-final:
 	zip lab2final.mann53 routingtable.c router.c
@@ -75,3 +87,4 @@ clean :
 	rm -f unit-test
 	rm -f lab2checkpoint.mann53
 	rm -f lab2final.mann53
+	rm -f udp_server

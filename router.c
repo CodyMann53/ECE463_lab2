@@ -10,6 +10,13 @@ int open_fd_udp(int port);
  
 void init_router(int router_id, int ne_udp_port, int router_udp_port, char * ne_hostname); 
 
+void create_pkt_INIT_RESPONSE(char * buffer, int  n, struct pkt_INIT_RESPONSE * pkt); 
+
+unsigned int extract_unsigned_int(char * buffer, int buffer_position); 
+
+
+void print_pkt_INIT_RESPONSE(struct pkt_INIT_RESPONSE * pkt); 
+
 int main (int argc, char ** argv){
 	// Convert a port number command line args to integers
 	int router_id = atoi(argv[ROUTER_ID_ARGV_POSITION]); 
@@ -23,12 +30,81 @@ int main (int argc, char ** argv){
 	return 0; 
 }
 
+unsigned int extract_unsigned_int(char * buffer, int buffer_position){
+	int x; 
+	unsigned int tmp = 0; 
+	for (x = 0; x < sizeof(unsigned int); x++){
+		tmp = tmp | (buffer[buffer_position + x] << 8*x);  
+	}
+	return tmp; 
+}
+
+void print_pkt_INIT_RESPONSE(struct pkt_INIT_RESPONSE * pkt){
+	if (pkt == NULL){
+		printf("Null pointer when trying to print pkt_INIT_RESPONSE\r\n");
+		return;  
+	}
+	
+	int z; 
+	printf("Number of neighbors: %d\r\n", pkt->no_nbr); 
+	for (z = 0; z < pkt->no_nbr; z++){
+		printf("Neighbor id: %d\r\n", pkt->nbrcost[z].nbr);  
+		printf("Cost to neighbor: %d\r\n", pkt->nbrcost[z].cost);  
+	}
+	return; 	
+}
+void create_pkt_INIT_RESPONSE(char * buffer, int  n, struct pkt_INIT_RESPONSE * pkt){
+	// extract number of neighbors from buffer
+	int i;
+	int pos_cnt = 0; 
+	int neighbor_counter = 0; 
+	unsigned int tmp  = 0;   
+	
+	// check for null buffer and packet pointers
+	if (buffer == NULL){
+		printf("Buffer was null when calling create_pkt_INIT_RESPONSE\r\n"); 
+		return; 
+	}
+	if (pkt == NULL){
+		printf("pkt_INIT_RESPONSE pointer was null when calling create_pkt_INIT_RESPONSE\r\n"); 
+		return; 
+	}
+
+	// Loop through all of the buffer bytes 
+	for (i = 0; i < sizeof(struct pkt_INIT_RESPONSE); i += sizeof(unsigned int)){
+		// if on first few bytes for number of neighbors, then extract number of neighbors
+		if ( i == 0){
+			tmp = extract_unsigned_int(buffer, i); 
+			pkt->no_nbr = htonl(tmp); 	
+		}
+		// else extract the neighbor id and cost 
+		else{
+			// extracting neighbor id
+			if (pos_cnt == 0){
+				tmp = extract_unsigned_int(buffer, i);
+				pkt->nbrcost[neighbor_counter].nbr = htonl(tmp);  
+			}
+			// extracting cost to neighbor
+			else{
+				tmp = extract_unsigned_int(buffer, i); 
+				pkt->nbrcost[neighbor_counter++].cost = htonl(tmp);  
+			}
+			pos_cnt = (pos_cnt + 1) % 2; 
+		}
+	}
+
+	print_pkt_INIT_RESPONSE(pkt); 
+
+	return; 
+} 	
 void init_router(int router_id, int ne_udp_port, int router_udp_port, char * ne_hostname){
 	int sockfd_client; 
 	char buffer[PACKETSIZE];
 	int n, len; 
 	struct sockaddr_in servaddr, cliaddr; 
   	struct hostent *hp;
+	struct pkt_INIT_RESPONSE pkt_init_response;
+	bzero(&pkt_init_response, sizeof(struct pkt_INIT_RESPONSE));  
 
 	// creating socket file descriptor
 	if ( (sockfd_client = socket(AF_INET, SOCK_DGRAM, 0)) < 0){
@@ -40,21 +116,32 @@ void init_router(int router_id, int ne_udp_port, int router_udp_port, char * ne_
 	memset(&cliaddr, 0, sizeof(cliaddr)); 
 	
 	// filling server information
+	if ((hp = gethostbyname(ne_hostname)) == NULL){
+		perror("Error when getting hostname"); 
+		close(sockfd_client); 
+		return; 
+	}
 	servaddr.sin_family = AF_INET; 
-	servaddr.sin_port = ne_udp_port;
-	//inet_aton(gethostbyname(ne_hostname), &servaddr.sin_addr.s_addr); 	
+	servaddr.sin_port = htons((unsigned short)ne_udp_port);
+	bcopy((char * ) hp->h_addr, (char *) &servaddr.sin_addr.s_addr, hp->h_length); 	
 	
-/*	// convert router id from host representation to network representation
+	
+	// convert router id from host representation to network representation
 	router_id = (uint32_t) htonl(router_id); 
 		
 	// Send the router id to network emulator which is acting as the server
 	sendto(sockfd_client, &router_id, sizeof(uint32_t), MSG_CONFIRM, (const struct sockaddr *) &servaddr, sizeof(servaddr)); 
 
-	// receive response back and then print for debugging purposes
+	// Wait for init response packet 
 	memset(buffer, 0, PACKETSIZE); 
-	n = recvfrom(sockfd_client, (char *) buffer, PACKETSIZE, MSG_WAITALL, (struct sockaddr *) &cliaddr, &len); 
-	print("Response: %s\r\n", buffer);  
-*/	
+	len = sizeof(cliaddr); 
+	n = recvfrom(sockfd_client, (char *) buffer, (size_t) PACKETSIZE, MSG_WAITALL, (struct sockaddr *) &cliaddr, (socklen_t *) &len); 
+	
+	// Create a pkt_INIT_RESPONSE structure from message and then udpate router table
+	create_pkt_INIT_RESPONSE(buffer, n, &pkt_init_response); 	
+	
+	// close the client's file descriptor and then return
+	close(sockfd_client); 
 	return; 
 }
 
