@@ -1,6 +1,15 @@
 CFLAGS = -g -Wall -lpthread
 CC = gcc
 
+# Arguments for routers and ne
+NE_HOSTNAME = localhost
+NE_UDP_PORT = 2062
+R0_UDP_PORT = 3062
+R1_UDP_PORT = 4062
+R2_UDP_PORT = 5062
+R3_UDP_PORT = 6062
+CONFIG_FILE = 4_routers.conf
+
 # change based on type of router to be built
 # value can be either DISTVECTOR or PATHVECTOR
 ROUTERMODE = PATHVECTOR
@@ -35,6 +44,26 @@ submit-checkpoint:
 .PHONY: test
 test:
 	./unit-test
+
+.PHONY: start_ne
+start_ne: 
+	./ne $(NE_UDP_PORT) $(CONFIG_FILE)
+
+.PHONY: run_0
+run_0: router
+	./router 0 $(NE_HOSTNAME) $(NE_UDP_PORT) $(R0_UDP_PORT)
+
+.PHONY: run_1
+run_1: router
+	./router 1 $(NE_HOSTNAME) $(NE_UDP_PORT) $(R1_UDP_PORT)
+
+.PHONY: run_2
+run_2: router
+	./router 2 $(NE_HOSTNAME) $(NE_UDP_PORT) $(R2_UDP_PORT)
+
+.PHONY: run_3
+run_3: router
+	./router 3 $(NE_HOSTNAME) $(NE_UDP_PORT) $(R3_UDP_PORT)
 
 .PHONY: submit-final
 submit-final:
