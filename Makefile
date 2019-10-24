@@ -15,7 +15,7 @@ CONFIG_FILE =  2_routers.conf
 ROUTERMODE = PATHVECTOR
 
 # if DEBUG is 1, debugging messages are printed
-DEBUG = 0
+DEBUG = 1
 
 # Check which OS
 OS := $(shell uname)
@@ -74,7 +74,7 @@ run_3: router
 
 .PHONY: debug
 debug:
-	gdb --args router 0 $(NE_HOSTNAME) $(NE_UDP_PORT) $(R0_UDP_PORT)
+	gdb --args router 1 $(NE_HOSTNAME) $(NE_UDP_PORT) $(R1_UDP_PORT)
 
 
 .PHONY: submit-final
@@ -86,5 +86,6 @@ clean :
 	rm -f router
 	rm -f unit-test
 	rm -f lab2checkpoint.mann53
+	rm -f *.log
 	rm -f lab2final.mann53
 	rm -f udp_server

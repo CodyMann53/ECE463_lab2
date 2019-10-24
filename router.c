@@ -19,14 +19,21 @@ void print_pkt_INIT_RESPONSE(struct pkt_INIT_RESPONSE * pkt);
 
 int main (int argc, char ** argv){
 	// Convert a port number command line args to integers
-	int router_id = atoi(argv[ROUTER_ID_ARGV_POSITION]); 
+	int router_id = atoi(argv[ROUTER_ID_ARGV_POSITION]);
 	int ne_udp_port = atoi(argv[NE_UDP_PORT_ARGV_POSITION]);
 	int router_udp_port = atoi(argv[ROUTER_UDP_PORT_ARGV_POSITION]); 
 
 	// Initialize the router 
 	init_router(router_id, ne_udp_port, router_udp_port, argv[NE_HOSTNAME_ARGV_POSITION]); 
 
-
+#if (DEBUG == 1)
+	char file_name[100]; 
+	bzero(file_name, 100); 
+	sprintf(file_name, "router_%d.log", router_id); 	
+	FILE * fp = fopen(file_name, "w"); 
+	PrintRoutes(fp, router_id);
+	fclose(fp);  
+#endif
 	return 0; 
 }
 
@@ -93,8 +100,6 @@ void create_pkt_INIT_RESPONSE(char * buffer, int  n, struct pkt_INIT_RESPONSE * 
 		}
 	}
 
-	print_pkt_INIT_RESPONSE(pkt); 
-
 	return; 
 } 	
 void init_router(int router_id, int ne_udp_port, int router_udp_port, char * ne_hostname){
@@ -125,12 +130,11 @@ void init_router(int router_id, int ne_udp_port, int router_udp_port, char * ne_
 	servaddr.sin_port = htons((unsigned short)ne_udp_port);
 	bcopy((char * ) hp->h_addr, (char *) &servaddr.sin_addr.s_addr, hp->h_length); 	
 	
-	
 	// convert router id from host representation to network representation
-	router_id = (uint32_t) htonl(router_id); 
+	unsigned int router_id_tmp = (unsigned int) htonl(router_id); 
 		
 	// Send the router id to network emulator which is acting as the server
-	sendto(sockfd_client, &router_id, sizeof(uint32_t), MSG_CONFIRM, (const struct sockaddr *) &servaddr, sizeof(servaddr)); 
+	sendto(sockfd_client, &router_id_tmp, sizeof(unsigned int), MSG_CONFIRM, (const struct sockaddr *) &servaddr, sizeof(servaddr)); 
 
 	// Wait for init response packet 
 	memset(buffer, 0, PACKETSIZE); 
@@ -139,6 +143,7 @@ void init_router(int router_id, int ne_udp_port, int router_udp_port, char * ne_
 	
 	// Create a pkt_INIT_RESPONSE structure from message and then udpate router table
 	create_pkt_INIT_RESPONSE(buffer, n, &pkt_init_response); 	
+	InitRoutingTbl(&pkt_init_response, router_id);  
 	
 	// close the client's file descriptor and then return
 	close(sockfd_client); 
