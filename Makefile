@@ -1,4 +1,4 @@
-CFLAGS = -g -Wall -lpthread
+CFLAGS = -g -Wall -pthread
 CC = gcc
 
 # Arguments for routers and ne
@@ -15,7 +15,7 @@ CONFIG_FILE =  2_routers.conf
 ROUTERMODE = PATHVECTOR
 
 # if DEBUG is 1, debugging messages are printed
-DEBUG = 1
+DEBUG = 0
 
 # Check which OS
 OS := $(shell uname)
