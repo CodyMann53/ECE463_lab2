@@ -76,10 +76,6 @@ void PrintRoutes (FILE* Logfile, int myID);
 void UninstallRoutesOnNbrDeath(int DeadNbr);
 
 
-
-
-
-
 /* Variable      : struct route_entry routingTable[MAX_ROUTERS]
  * Variable Type : Array of type (struct route_entry)
  * USAGE         : Define as a Global Variable in routingtable.c.
