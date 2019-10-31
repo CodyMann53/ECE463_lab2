@@ -6,44 +6,13 @@
 struct route_entry routingTable[MAX_ROUTERS];
 int NumRoutes;
 
-/*************************************************************************************** Function declarations*****************************************************************************************/
-/* Routine Name    : in_table
- * INPUT ARGUMENTS : 1.  int- The destination id to be checked if there is an entry in table for it 
- *                   2. int * - Pointer to an integer that the function will place the index of entry if found in table. 
-				The function does not alter this value if the entry is not found in table
- *                   
- * RETURN VALUE    : bool - true:  If entry for destination exists in routers table
-			    false: There is no entry in router's table for this destination
- * USAGE           : This function should be called when a user wants to check whether the router has an entry for a 
- *  		     a particular destination. 
- */
 bool in_table(int dest_id, int * entry_index); 
 
 
-/* Routine Name    : forced_update_rule
- * INPUT ARGUMENTS : 1. struct route_entry * - Pointer to router's entry is having the forced update rule applied to it
-                     2. struct route_entry * - Pointer to sender's entry in routing table that will be used wtih forced update rule to be applied
-                     3. int - The new calculated cost using the sender's cost and the cost to get to sender from router position 
- *
- * RETURN VALUE    : void
- * USAGE           : This should be called within a routine that is performing updates on router's entry table in the case where a new routing update packet 
- *		     has been received from one of its neighbors. This funciton simply performs the forced update logic on the entry and then updates the cost 
-		     accordingly. 
- */
-void forced_update_rule(struct route_entry * router, struct route_entry * neighbor, int new_cost); 
+int forced_update_rule(struct route_entry * router, struct route_entry * neighbor, int new_cost); 
  
-/* Routine Name    : path_vector_rule
- * INPUT ARGUMENTS : 1. struct route_entry * - Pointer to router's entry that is having path vector rule applied
-                     2. struct route_entry * - Pointer to sender's entry in routing table that will be used wtih path vector rule to be applied
-                     3. int - The new calculated cost using the sender's cost and the cost to get to sender from router position 
-		     4. int - The id of router that is fed as a command line argument at run time
- * 
- * RETURN VALUE    : void
- * USAGE           : This should be called within a routine that is performing updates on router's entry table in the case where a new routing update packet 
-  		     has been received from one of its neighbors. This funciton simply performs the path vector rule logic on the entry and then updates the cost 
- 		     accordingly. 
- */
-void path_vector_rule(struct route_entry * router, struct route_entry * neighbor, int new_cost, int myID); 
+
+int path_vector_rule(struct route_entry * router, struct route_entry * neighbor, int new_cost, int myID); 
 
 /*************************************************************************************** Function definitions*****************************************************************************************/
 ////////////////////////////////////////////////////////////////
@@ -73,7 +42,7 @@ void InitRoutingTbl (struct pkt_INIT_RESPONSE *InitResponse, int myID){
 	int i; 
 	for (i = 0; i < InitResponse->no_nbr; i++){		
 		
-		// Make routing table entry for this neighbori
+		// Make routing table entry for this neighbor
 		routingTable[NumRoutes].dest_id = InitResponse->nbrcost[i].nbr; 
 		routingTable[NumRoutes].next_hop = InitResponse->nbrcost[i].nbr; 
 		routingTable[NumRoutes].cost = InitResponse->nbrcost[i].cost;
@@ -89,6 +58,7 @@ void InitRoutingTbl (struct pkt_INIT_RESPONSE *InitResponse, int myID){
 ////////////////////////////////////////////////////////////////
 int UpdateRoutes(struct pkt_RT_UPDATE *RecvdUpdatePacket, int costToNbr, int myID){
 	int new_cost = 0; 
+	int table_changed_flag = 0; 
 	
 	// Check for null pointer error
 	if (RecvdUpdatePacket == NULL){
@@ -131,17 +101,22 @@ int UpdateRoutes(struct pkt_RT_UPDATE *RecvdUpdatePacket, int costToNbr, int myI
 				routingTable[NumRoutes].path[j] = RecvdUpdatePacket->route[i].path[j-1];  
 			}		
 #endif 
-			NumRoutes++; 
+			NumRoutes++;
+				
+			// Signal that table changed
+			table_changed_flag = 1;  
 		}
 		// else perform the path vector update algorithm because entry was found 
 		else{
 			// Forced update and path vector rules being applied
-			forced_update_rule(&routingTable[entry_index], &RecvdUpdatePacket->route[i], new_cost); 
-			path_vector_rule(&routingTable[entry_index], &RecvdUpdatePacket->route[i], new_cost, myID); 
+			if ((forced_update_rule(&routingTable[entry_index], &RecvdUpdatePacket->route[i], new_cost) == 1) | 
+				(path_vector_rule(&routingTable[entry_index], &RecvdUpdatePacket->route[i], new_cost, myID) == 1)){
+				table_changed_flag = 1; 
+			} 
 		}
 	}	
 	
-	return 0;
+	return table_changed_flag;
 }
 
 ////////////////////////////////////////////////////////////////
@@ -218,27 +193,31 @@ bool in_table(int dest_id, int * entry_index){
 }
 
  
-void forced_update_rule(struct route_entry * router, struct route_entry * neighbor, int new_cost){
-	// if neighbor is next hop for router, then it must update its entry
-	if (router->next_hop == neighbor->path[0]){
+int forced_update_rule(struct route_entry * router, struct route_entry * neighbor, int new_cost){
+	int update_flag = 0; 
+	
+	// if neighbor is next hop for router and its cost has changed, then it must update its entry
+	if ((router->next_hop == neighbor->path[0]) & (new_cost != router->cost)){
 		router->cost = new_cost;
 		router->path_len = neighbor->path_len + 1;
 		int i;  
 		for (i = 1; i < router->path_len; i++){
 			router->path[i] = neighbor->path[i-1]; 
 		}
+		
+		update_flag = 1; 
 	}
-	return; 
+	return update_flag; 
 } 
 
-void path_vector_rule(struct route_entry * router, struct route_entry * neighbor, int new_cost, int myID){
-	// Don't do anything if router is in neighbor's path to destination
+int path_vector_rule(struct route_entry * router, struct route_entry * neighbor, int new_cost, int myID){
+	int update_flag = 0; 
+	
 #ifdef PATHVECTOR
 	int i;
-
 	for (i = 0; i < neighbor->path_len; i++){
 		if (neighbor->path[i] == myID){
-			return; 
+			return update_flag; 
 		}; 
 	}
 
@@ -253,8 +232,10 @@ void path_vector_rule(struct route_entry * router, struct route_entry * neighbor
 		for (i = 1; i < router->path_len; i++){
 			router->path[i] = neighbor->path[i-1]; 
 		}
+		
+		update_flag = 1; 
 	}
 #endif 
-	return; 
+	return update_flag; 
 }
 

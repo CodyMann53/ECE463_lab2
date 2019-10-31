@@ -8,14 +8,14 @@ R0_UDP_PORT = 3062
 R1_UDP_PORT = 4062
 R2_UDP_PORT = 5062
 R3_UDP_PORT = 6062
-CONFIG_FILE =  2_routers.conf
+CONFIG_FILE =  4_routers.conf
 
 # change based on type of router to be built
 # value can be either DISTVECTOR or PATHVECTOR
 ROUTERMODE = PATHVECTOR
 
 # if DEBUG is 1, debugging messages are printed
-DEBUG = 0
+DEBUG = 1
 
 # Check which OS
 OS := $(shell uname)
@@ -41,12 +41,17 @@ unit-test  : routingtable.o unit-test.c
 submit-checkpoint:
 	zip lab2checkpoint.mann53 routingtable.c router.c
 
-udp_server: udp_server.c router.h
-	$(CC) $(CFLAGS) -D $(ROUTERMODE) -D DEBUG=$(DEBUG) udp_server.c -o udp_server
 
-.PHONY: run_udp_server
-run_udp_server:
-	./udp_server $(NE_UDP_PORT)
+udp_client: udp_client.c routingtable.c endian.c
+	$(CC) $(CFLAGS) -D $(ROUTERMODE) -D DEBUG=$(DEBUG) udp_client.c routingtable.c endian.c -o udp_client
+
+#define ROUTER_ID_ARGV_POSITION 1
+#define DEST_HOSTNAME_ARGV_POSITION 2
+#define DEST_PORT_ARGV_POSITION 3
+#define ROUTER_DEST_ID_ARGV_POSITION 4
+.PHONY: run_udp_client
+run_udp_client:
+	./udp_client 0 localhost $(R1_UDP_PORT) 1
 
 .PHONY: test
 test:
@@ -74,8 +79,11 @@ run_3: router
 
 .PHONY: debug
 debug:
-	gdb --args router 1 $(NE_HOSTNAME) $(NE_UDP_PORT) $(R1_UDP_PORT)
+	gdb --args router 0 $(NE_HOSTNAME) $(NE_UDP_PORT) $(R1_UDP_PORT)
 
+.PHONY: memory
+memory:
+	valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-reachable=yes ./router 0 $(NE_HOSTNAME) $(NE_UDP_PORT) $(R0_UDP_PORT)
 
 .PHONY: submit-final
 submit-final:
