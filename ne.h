@@ -8,7 +8,6 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
-#include <stdbool.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/socket.h>
@@ -18,7 +17,7 @@
 #include <fcntl.h>
 
 #define MAX_ROUTERS 10 /* max # of routers in the system */
-#define MAX_PATH_LEN MAX_ROUTERS - 1
+#define MAX_PATH_LEN MAX_ROUTERS
 #define PACKETSIZE 1024 /* assume packet size large enough to contain a full routing table */
 #define INFINITY 999 /* Cost to a unreacheable destination router */
 #define UPDATE_INTERVAL 1 /* router sends routing updates every 1 sec */

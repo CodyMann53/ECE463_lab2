@@ -24,6 +24,8 @@
  */
 void InitRoutingTbl (struct pkt_INIT_RESPONSE *InitResponse, int myID);
 
+
+
 /* Routine Name    : UpdateRoutes
  * INPUT ARGUMENTS : 1. (struct pkt_RT_UPDATE *) - The Route Update message from one of the neighbors of the router.
  *                   2. int - The direct cost to the neighbor who sent the update. 
@@ -91,9 +93,6 @@ void UninstallRoutesOnNbrDeath(int DeadNbr);
  *                 It is initialized on receiving INIT_RESPONSE from Network Emulator
  *                 and is updated in the UpdateRoutes() function, whenever the routingTable changes. 
  */
-
-
-
 #endif
 
 

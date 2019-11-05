@@ -1,6 +1,6 @@
 #include "ne.h"
 #include "router.h"
-
+#include "stdbool.h"
 
 /* ----- GLOBAL VARIABLES ----- */
 struct route_entry routingTable[MAX_ROUTERS];
@@ -33,9 +33,8 @@ void InitRoutingTbl (struct pkt_INIT_RESPONSE *InitResponse, int myID){
 	routingTable[NumRoutes].next_hop = myID; 
 	routingTable[NumRoutes].cost = 0;
 #ifdef PATHVECTOR		 
-	routingTable[NumRoutes].path_len = 2;
-	routingTable[NumRoutes].path[0] = myID;
-	routingTable[NumRoutes++].path[1] = myID;
+	routingTable[NumRoutes].path_len = 1;
+	routingTable[NumRoutes++].path[0] = myID;
 #endif 
 
 	// Loop through all of router's neighbors to initialize's its routing table
@@ -155,7 +154,8 @@ void UninstallRoutesOnNbrDeath(int DeadNbr){
 	int i; 
 	for (i = 0; i < NumRoutes; i++){
 		if (routingTable[i].next_hop == DeadNbr){
-			routingTable[i].cost = INFINITY; 
+			routingTable[i].cost = INFINITY;
+			routingTable[i].path_len = 0;  
 		}
 	} 
 	return;

@@ -116,7 +116,6 @@ int main (int argc, char ** argv){
 	fp = fopen(file_name, "w"); 
 	PrintRoutes(fp, router_id);
 
-
 	// Create the udp server and time keeper thread
 	pthread_attr_t attr; 
 	pthread_attr_init(&attr); 
@@ -183,6 +182,9 @@ int main (int argc, char ** argv){
 				// reset convergence flags and timer, because the table is no longer converged
 				convergence_timer = time(NULL); 
 				converged_flag = ROUTER_CONVERGING; 
+				
+				// print updated routing table
+				PrintRoutes(fp, router_id);
 #if DEBUG == 1			
 				printf("Dead router %d found.\r\n", neighbor_table.neighbors[j].nbr); 
 #endif
@@ -223,9 +225,10 @@ void * udp_server_thread(void * param){
 		nbr_cost = get_cost_to_neighbor(recv_update_pkt.sender_id);
 		signal_received_update_from_neighbor(recv_update_pkt.sender_id); 
 		
-		// If router table changed, then reset convergence timer
+		// If router table changed, then reset convergence timer and signal that still converging
 		if (UpdateRoutes(&recv_update_pkt, nbr_cost, arguments->router_id) == 1){
 			convergence_timer = time(NULL); 
+			converged_flag = ROUTER_CONVERGING; 
 			PrintRoutes(fp, arguments->router_id);
 		}
 		
@@ -293,8 +296,8 @@ void * time_keeper_thread(void * param){
 			base_time_update_interval = time(NULL); 
 		}
 		
-		pthread_mutex_lock(&lock); 	
 		// Check for convergence 
+		pthread_mutex_lock(&lock); 	
 		if ( ((time(NULL) - convergence_timer) > CONVERGE_TIMEOUT) & (converged_flag != ROUTER_IN_CONVERGENCE_STATE) ){
 			converged_flag = ROUTER_CONVERGENCE_DETECTED; 
 		}
