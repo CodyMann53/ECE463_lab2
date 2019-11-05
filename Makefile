@@ -45,10 +45,6 @@ submit-checkpoint:
 udp_client: udp_client.c routingtable.c endian.c
 	$(CC) $(CFLAGS) -D $(ROUTERMODE) -D DEBUG=$(DEBUG) udp_client.c routingtable.c endian.c -o udp_client
 
-#define ROUTER_ID_ARGV_POSITION 1
-#define DEST_HOSTNAME_ARGV_POSITION 2
-#define DEST_PORT_ARGV_POSITION 3
-#define ROUTER_DEST_ID_ARGV_POSITION 4
 .PHONY: run_udp_client
 run_udp_client:
 	./udp_client 0 localhost $(R1_UDP_PORT) 1
@@ -60,6 +56,22 @@ test:
 .PHONY: start_ne
 start_ne: 
 	./ne $(NE_UDP_PORT) $(CONFIG_FILE)
+
+.PHONY: golden_run_0
+golden_run_0: 
+	./golden_router 0 $(NE_HOSTNAME) $(NE_UDP_PORT) $(R0_UDP_PORT)
+
+.PHONY: golden_run_1
+golden_run_1: 
+	./golden_router 1 $(NE_HOSTNAME) $(NE_UDP_PORT) $(R1_UDP_PORT)
+
+.PHONY: golden_run_2
+golden_run_2: 
+	./golden_router 2 $(NE_HOSTNAME) $(NE_UDP_PORT) $(R2_UDP_PORT)
+
+.PHONY: golden_run_3
+golden_run_3: 
+	./golden_router 3 $(NE_HOSTNAME) $(NE_UDP_PORT) $(R3_UDP_PORT)
 
 .PHONY: run_0
 run_0: router
