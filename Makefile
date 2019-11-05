@@ -8,6 +8,7 @@ R0_UDP_PORT = 3062
 R1_UDP_PORT = 4062
 R2_UDP_PORT = 5062
 R3_UDP_PORT = 6062
+R4_UDP_PORT = 7062
 CONFIG_FILE =  4_routers.conf
 
 # change based on type of router to be built
@@ -73,6 +74,10 @@ golden_run_2:
 golden_run_3: 
 	./golden_router 3 $(NE_HOSTNAME) $(NE_UDP_PORT) $(R3_UDP_PORT)
 
+.PHONY: golden_run_4
+golden_run_4: 
+	./golden_router 4 $(NE_HOSTNAME) $(NE_UDP_PORT) $(R4_UDP_PORT)
+
 .PHONY: run_0
 run_0: router
 	./router 0 $(NE_HOSTNAME) $(NE_UDP_PORT) $(R0_UDP_PORT)
@@ -88,6 +93,10 @@ run_2: router
 .PHONY: run_3
 run_3: router
 	./router 3 $(NE_HOSTNAME) $(NE_UDP_PORT) $(R3_UDP_PORT)
+
+.PHONY: run_4
+run_4: router
+	./router 4 $(NE_HOSTNAME) $(NE_UDP_PORT) $(R4_UDP_PORT)
 
 .PHONY: debug
 debug:

@@ -165,7 +165,7 @@ int main (int argc, char ** argv){
 #if DEBUG == 1
 			printf("Routing table converged.\r\n");
 #endif 
-			fprintf(fp, "%lld:Converged\r\n", (long long) (time(NULL) - program_base_run_time)); 
+			fprintf(fp, "%lld:Converged\n", (long long) (time(NULL) - program_base_run_time)); 
 			fflush(fp);
 		}	
 		pthread_mutex_unlock(&lock); 
